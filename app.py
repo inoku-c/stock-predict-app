@@ -34,23 +34,24 @@ if not st.session_state.paid:
         st.rerun()
 else:
     st.success("✅ 支払いを確認しました。高度な統計モデル（Prophet）による予測を実行します。")
+    # --- AI予測 (Prophet) ---
     if st.button('将来を予測する'):
-        with st.spinner('AIが計算中...'):
-            df_train = data.reset_index()[['Date', 'Close']]
-            # 統計的な整合性のための列名変更
-            df_train.columns = ['ds', 'y'] 
-            
-            model = Prophet()
-            model.fit(df_train)
-            
-            future = model.make_future_dataframe(periods=30)
-            forecast = model.predict(future)
-            
-            st.subheader('30日後の予測結果 (95%信頼区間)')
-            fig = go.Figure()
-            # 予測値
-            fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat'], name='予測値'))
-            # 信頼区間（統計アナリストとしてのこだわり）
-            fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_upper'], fill=None, mode='lines', line_color='rgba(0,100,80,0.2)', name='上限'))
-            fig.add_trace(go.Scatter(x=forecast['ds'], y=forecast['yhat_lower'], fill='tonexty', mode='lines', line_color='rgba(0,100,80,0.2)', name='下限'))
-            st.plotly_chart(fig)
+        # 翌日（1日分）だけを予測
+        future = model.make_future_dataframe(periods=1)
+        forecast = model.predict(future)
+        
+        # 翌日のデータだけを抽出
+        tomorrow = forecast.iloc[-1]
+        
+        st.subheader(f"📅 {tomorrow['ds'].strftime('%Y-%m-%d')} の予測結果")
+        
+        # メトリクス（大きな数字）で表示
+        col1, col2, col3 = st.columns(3)
+        col1.metric("予測価格", f"${tomorrow['yhat']:.2f}")
+        col2.metric("95%下限 (CI)", f"${tomorrow['yhat_lower']:.2f}")
+        col3.metric("95%上限 (CI)", f"${tomorrow['yhat_upper']:.2f}")
+        
+        # チャートを直近30日に絞って表示（視認性向上）
+        fig = model.plot(forecast)
+        plt.xlim(forecast['ds'].iloc[-30], forecast['ds'].iloc[-1]) 
+        st.pyplot(fig)

@@ -63,14 +63,29 @@ def create_portal_session(customer_id):
 @st.cache_data(ttl=3600)
 def load_data(ticker, start_date="2015-01-01"):
     try:
-        data = yf.download(ticker, start=start_date, auto_adjust=True)
-        if data.empty:
+        data = yf.download(ticker, start=start_date, auto_adjust=True, progress=False)
+        if data is None or data.empty:
+            data = yf.download(ticker, start=start_date, progress=False)
+        if data is None or data.empty:
             return None
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = data.columns.get_level_values(0)
+        if "Adj Close" in data.columns and "Close" not in data.columns:
+            data["Close"] = data["Adj Close"]
         return data.dropna()
-    except Exception:
-        return None
+    except Exception as e:
+        st.warning(f"データ取得リトライ中... ({e})")
+        try:
+            import time
+            time.sleep(2)
+            data = yf.download(ticker, start=start_date, progress=False)
+            if data is None or data.empty:
+                return None
+            if isinstance(data.columns, pd.MultiIndex):
+                data.columns = data.columns.get_level_values(0)
+            return data.dropna()
+        except Exception:
+            return None
 
 def calc_technical_indicators(data):
     df = data.copy()

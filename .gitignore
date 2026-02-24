@@ -4,4 +4,7 @@ __pycache__/
 .streamlit/secrets.toml
 venv/
 .venv/
+*.egg-info/
+dist/
+build/
 app_backup.py

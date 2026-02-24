@@ -401,29 +401,21 @@ st.divider()
 
 st.subheader("🤖 AI 株価予測")
 if not is_paid:
-    st.markdown("""
-    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);
-                border:2px solid #e94560;border-radius:16px;padding:40px;
-                text-align:center;margin:20px 0;">
-        <h2 style="color:#e94560;">🔒 Pro プランで AI 予測をアンロック</h2>
-        <p style="color:#ccc;font-size:18px;margin-bottom:30px;">
-            LSTM・RandomForest・GradientBoosting の3モデルによるアンサンブル予測</p>
-        <div style="display:flex;justify-content:center;gap:30px;flex-wrap:wrap;margin-bottom:30px;">
-            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:20px;width:200px;">
-                <div style="font-size:28px;">🧠</div>
-                <div style="color:#fff;font-weight:bold;">LSTM</div>
-                <div style="color:#aaa;font-size:13px;">深層学習による時系列予測</div></div>
-            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:20px;width:200px;">
-                <div style="font-size:28px;">🌲</div>
-                <div style="color:#fff;font-weight:bold;">RandomForest</div>
-                <div style="color:#aaa;font-size:13px;">決定木アンサンブル予測</div></div>
-            <div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:20px;width:200px;">
-                <div style="font-size:28px;">🚀</div>
-                <div style="color:#fff;font-weight:bold;">GradientBoosting</div>
-                <div style="color:#aaa;font-size:13px;">勾配ブースティング予測</div></div>
-        </div>
-        <p style="color:#aaa;">✅ 95%信頼区間 ✅ モデル精度比較 ✅ 最大60日先予測 ✅ 全銘柄対応</p>
-    </div>""", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("### 🔒 Pro プランで AI 予測をアンロック")
+    st.markdown("LSTM・RandomForest・GradientBoosting の3モデルによるアンサンブル予測")
+    m1, m2, m3 = st.columns(3)
+    with m1:
+        st.markdown("🧠 **LSTM**")
+        st.caption("深層学習による時系列予測")
+    with m2:
+        st.markdown("🌲 **RandomForest**")
+        st.caption("決定木アンサンブル予測")
+    with m3:
+        st.markdown("🚀 **GradientBoosting**")
+        st.caption("勾配ブースティング予測")
+    st.markdown("✅ 95%信頼区間　✅ モデル精度比較　✅ 最大60日先予測　✅ 全銘柄対応")
+    st.markdown("---")
     _, cb, _ = st.columns([1, 2, 1])
     with cb:
         if st.button("🚀 Pro プランに登録する（月額 ¥380）", type="primary",

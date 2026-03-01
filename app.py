@@ -4,8 +4,8 @@ import numpy as np
 import yfinance as yf
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import stripe
 import os
+import hashlib
 from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
@@ -13,52 +13,17 @@ warnings.filterwarnings('ignore')
 st.set_page_config(page_title="Stock Predictor Pro", page_icon="📈",
                    layout="wide", initial_sidebar_state="expanded")
 
-stripe.api_key = st.secrets.get("STRIPE_SECRET_KEY") or os.getenv("STRIPE_SECRET_KEY")
-STRIPE_PRICE_ID = st.secrets.get("STRIPE_PRICE_ID") or os.getenv("STRIPE_PRICE_ID")
-APP_URL = st.secrets.get("APP_URL") or os.getenv("APP_URL", "http://localhost:8501")
+BMC_URL = "https://buymeacoffee.com/yino1802i"
+ACCESS_CODES = set((st.secrets.get("ACCESS_CODES") or os.getenv("ACCESS_CODES", "")).split(","))
 
 if "paid" not in st.session_state:
     st.session_state.paid = False
-if "customer_id" not in st.session_state:
-    st.session_state.customer_id = None
-if "subscription_id" not in st.session_state:
-    st.session_state.subscription_id = None
 
-def create_checkout_session():
-    try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{"price": STRIPE_PRICE_ID, "quantity": 1}],
-            mode="subscription",
-            success_url=f"{APP_URL}?session_id={{CHECKOUT_SESSION_ID}}&status=success",
-            cancel_url=f"{APP_URL}?status=cancel",
-        )
-        return session
-    except Exception as e:
-        st.error(f"決済セッション作成エラー: {e}")
-        return None
-
-def check_payment_status():
-    params = st.query_params
-    if params.get("status") == "success" and params.get("session_id"):
-        try:
-            session = stripe.checkout.Session.retrieve(params["session_id"])
-            if session.payment_status == "paid" or session.status == "complete":
-                st.session_state.paid = True
-                st.session_state.customer_id = session.customer
-                st.session_state.subscription_id = session.subscription
-                return True
-        except Exception:
-            pass
-    return st.session_state.paid
-
-def create_portal_session(customer_id):
-    try:
-        session = stripe.billing_portal.Session.create(
-            customer=customer_id, return_url=APP_URL)
-        return session.url
-    except Exception:
-        return None
+def check_access_code(code):
+    if code and code.strip() in ACCESS_CODES:
+        st.session_state.paid = True
+        return True
+    return False
 
 @st.cache_data(ttl=3600)
 def load_data(ticker, start_date="2015-01-01"):
@@ -338,19 +303,23 @@ def plot_prediction_chart(data, ens, forecast_days):
                       margin=dict(l=60, r=30, t=60, b=30))
     return fig
 
-is_paid = check_payment_status()
+is_paid = st.session_state.paid
 
 with st.sidebar:
     st.title("📈 Stock Predictor Pro")
     st.divider()
     if is_paid:
         st.success("✅ Pro プラン有効")
-        if st.session_state.customer_id:
-            portal_url = create_portal_session(st.session_state.customer_id)
-            if portal_url:
-                st.link_button("⚙️ サブスク管理", portal_url)
     else:
         st.info("🆓 無料プラン")
+        code_input = st.text_input("🔑 アクセスコード", type="password",
+                                     placeholder="メンバーに配布されたコード")
+        if code_input:
+            if check_access_code(code_input):
+                st.success("✅ アンロック成功！")
+                st.rerun()
+            else:
+                st.error("コードが正しくありません")
     st.divider()
     st.subheader("銘柄設定")
     presets = {"S&P 500": "^GSPC", "日経平均": "^N225", "NASDAQ": "^IXIC",
@@ -416,14 +385,15 @@ if not is_paid:
         st.caption("勾配ブースティング予測")
     st.markdown("✅ 95%信頼区間　✅ モデル精度比較　✅ 最大60日先予測　✅ 全銘柄対応")
     st.markdown("---")
+    st.markdown("#### 📝 利用手順")
+    st.markdown("1. 下のボタンから **Pro メンバー** に登録（$3/月）")
+    st.markdown("2. 登録後に届く **アクセスコード** をサイドバーに入力")
+    st.markdown("3. AI予測機能がアンロックされます！")
     _, cb, _ = st.columns([1, 2, 1])
     with cb:
-        if st.button("🚀 Pro プランに登録する（月額 ¥380）", type="primary",
-                      use_container_width=True):
-            sess = create_checkout_session()
-            if sess:
-                st.link_button("💳 決済ページへ進む", sess.url,
-                               use_container_width=True)
+        st.link_button("☕ Pro メンバーに登録する（$3/月）",
+                       "https://buymeacoffee.com/yino1802i/membership",
+                       use_container_width=True)
 else:
     if st.button("🎯 AI 予測を実行", type="primary", use_container_width=True):
         if len(models_to_use) == 0:
